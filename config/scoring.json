@@ -1,0 +1,67 @@
+{
+  "weights": {
+    "corroborationPerBrand": 12,
+    "corroborationMaxBrands": 3,
+    "keywordHit": 8,
+    "keywordMaxHits": 3,
+    "googleNewsTopBonus": 15,
+    "trendMatchBonus": 8,
+    "recencyMax": 15,
+    "recencyMinutesPerPoint": 12
+  },
+  "thresholds": {
+    "breaking": 70,
+    "top": 48,
+    "normal": 22
+  },
+  "breakingRequires": {
+    "minBrands": 2,
+    "orMinKeywordHits": 2
+  },
+  "caps": {
+    "breaking-news": { "perRun": 2, "perHour": 4 },
+    "top-stories": { "perRun": 3, "perHour": 8 },
+    "default": { "perRun": 4, "perHour": 12 }
+  },
+  "pendingRetryMaxAgeMinutes": 120,
+  "clusterWindowHours": 6,
+  "jaccardThreshold": 0.5,
+  "containmentThreshold": 0.7,
+  "keywords": [
+    "breaking", "dies", "dead", "death", "death toll", "killed", "shot", "stabbed", "stabbing",
+    "explosion", "blast", "crash", "crashes", "collapse", "fire", "arrested", "charged", "guilty",
+    "sentenced", "jailed", "resigns", "resignation", "sacked", "quits", "earthquake", "flood",
+    "wildfire", "storm", "attack", "missile", "strike", "war", "ceasefire", "hostage", "emergency",
+    "evacuated", "missing", "outbreak", "banned", "record", "wins", "champion", "divorce",
+    "engaged", "pregnant", "split", "verdict", "riot", "protest", "assassination"
+  ],
+  "ai": {
+    "enabled": true,
+    "models": ["z-ai/glm-5.1", "z-ai/glm-4.6", "google/gemini-2.5-flash"],
+    "maxStoriesPerRun": 8,
+    "timeoutMs": 45000,
+    "temperature": 0.8,
+    "minIgScoreToPost": 50
+  },
+  "trends": {
+    "digestMinNewTerms": 3,
+    "digestMinGapHours": 3,
+    "maxTermsTracked": 20
+  },
+  "briefing": {
+    "hourLondon": 8,
+    "topN": 10
+  },
+  "memberSweepEveryNRuns": 3,
+  "colors": {
+    "breaking": "ED4245",
+    "uk": "C8102E",
+    "world": "1F8B4C",
+    "southasia": "E67E22",
+    "entertainment": "E91E63",
+    "sport": "3498DB",
+    "viral": "9B59B6",
+    "briefing": "F1C40F",
+    "status": "95A5A6"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "feeds": [
+    { "id": "bbc-uk",        "name": "BBC News",          "url": "https://feeds.bbci.co.uk/news/uk/rss.xml",                                        "category": "uk",            "tier": "breaking", "weight": 25, "brand": "bbc" },
+    { "id": "sky-uk",        "name": "Sky News",          "url": "https://feeds.skynews.com/feeds/rss/uk.xml",                                      "category": "uk",            "tier": "breaking", "weight": 25, "brand": "sky" },
+    { "id": "guardian-uk",   "name": "The Guardian",      "url": "https://www.theguardian.com/uk-news/rss",                                         "category": "uk",            "tier": "breaking", "weight": 22, "brand": "guardian" },
+    { "id": "sky-politics",  "name": "Sky News Politics", "url": "https://feeds.skynews.com/feeds/rss/politics.xml",                                "category": "uk",            "tier": "standard", "weight": 20, "brand": "sky" },
+    { "id": "bbc-england",   "name": "BBC England",       "url": "https://feeds.bbci.co.uk/news/england/rss.xml",                                   "category": "uk",            "tier": "standard", "weight": 22, "brand": "bbc" },
+
+    { "id": "bbc-world",     "name": "BBC World",         "url": "https://feeds.bbci.co.uk/news/world/rss.xml",                                     "category": "world",         "tier": "breaking", "weight": 25, "brand": "bbc" },
+    { "id": "sky-world",     "name": "Sky News World",    "url": "https://feeds.skynews.com/feeds/rss/world.xml",                                   "category": "world",         "tier": "breaking", "weight": 25, "brand": "sky" },
+    { "id": "aljazeera",     "name": "Al Jazeera",        "url": "https://www.aljazeera.com/xml/rss/all.xml",                                       "category": "world",         "tier": "breaking", "weight": 22, "brand": "aljazeera" },
+    { "id": "guardian-world","name": "Guardian World",    "url": "https://www.theguardian.com/world/rss",                                           "category": "world",         "tier": "standard", "weight": 22, "brand": "guardian" },
+
+    { "id": "gnews-top",     "name": "Google News UK",    "url": "https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en",                           "category": "world",         "tier": "breaking", "weight": 0,  "brand": "gnews", "corroborationOnly": true },
+
+    { "id": "ndtv-top",      "name": "NDTV",              "url": "https://feeds.feedburner.com/ndtvnews-top-stories",                               "category": "southasia",     "tier": "breaking", "weight": 18, "brand": "ndtv" },
+    { "id": "toi-top",       "name": "Times of India",    "url": "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",                      "category": "southasia",     "tier": "breaking", "weight": 18, "brand": "toi" },
+    { "id": "ht-india",      "name": "Hindustan Times",   "url": "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml",                 "category": "southasia",     "tier": "standard", "weight": 18, "brand": "ht" },
+    { "id": "dawn",          "name": "Dawn",              "url": "https://www.dawn.com/feeds/home",                                                 "category": "southasia",     "tier": "breaking", "weight": 18, "brand": "dawn" },
+    { "id": "geo",           "name": "Geo News",          "url": "https://www.geo.tv/rss/1/1",                                                      "category": "southasia",     "tier": "standard", "weight": 16, "brand": "geo" },
+    { "id": "bbc-asia",      "name": "BBC Asia",          "url": "https://feeds.bbci.co.uk/news/world/asia/rss.xml",                                "category": "southasia",     "tier": "breaking", "weight": 25, "brand": "bbc" },
+    { "id": "dailystar-bd",  "name": "The Daily Star",    "url": "https://www.thedailystar.net/news/rss.xml",                                       "category": "southasia",     "tier": "standard", "weight": 14, "brand": "dailystar" },
+
+    { "id": "bbc-ents",      "name": "BBC Entertainment", "url": "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",                    "category": "entertainment", "tier": "standard", "weight": 22, "brand": "bbc" },
+    { "id": "deadline",      "name": "Deadline",          "url": "https://deadline.com/feed/",                                                      "category": "entertainment", "tier": "standard", "weight": 16, "brand": "deadline" },
+    { "id": "variety",       "name": "Variety",           "url": "https://variety.com/feed/",                                                       "category": "entertainment", "tier": "standard", "weight": 16, "brand": "variety" },
+    { "id": "hungama",       "name": "Bollywood Hungama", "url": "https://www.bollywoodhungama.com/feed/",                                          "category": "entertainment", "tier": "standard", "weight": 14, "brand": "hungama" },
+    { "id": "ht-bollywood",  "name": "HT Bollywood",      "url": "https://www.hindustantimes.com/feeds/rss/entertainment/bollywood/rssfeed.xml",    "category": "entertainment", "tier": "standard", "weight": 15, "brand": "ht" },
+    { "id": "pinkvilla",     "name": "Pinkvilla",         "url": "https://www.pinkvilla.com/rss.xml",                                               "category": "entertainment", "tier": "standard", "weight": 13, "brand": "pinkvilla" },
+
+    { "id": "bbc-sport",     "name": "BBC Sport",         "url": "https://feeds.bbci.co.uk/sport/rss.xml",                                          "category": "sport",         "tier": "breaking", "weight": 22, "brand": "bbc" },
+    { "id": "skysports",     "name": "Sky Sports News",   "url": "https://www.skysports.com/rss/12040",                                             "category": "sport",         "tier": "breaking", "weight": 20, "brand": "sky" },
+    { "id": "cricinfo",      "name": "ESPNcricinfo",      "url": "https://www.espncricinfo.com/rss/content/story/feeds/0.xml",                      "category": "sport",         "tier": "breaking", "weight": 20, "brand": "espn" },
+    { "id": "bbc-cricket",   "name": "BBC Cricket",       "url": "https://feeds.bbci.co.uk/sport/cricket/rss.xml",                                  "category": "sport",         "tier": "standard", "weight": 22, "brand": "bbc" },
+
+    { "id": "gtrends-gb",    "name": "Google Trends GB",  "url": "https://trends.google.com/trending/rss?geo=GB",                                   "category": "viral",         "tier": "standard", "weight": 0,  "brand": "gtrends", "trendsOnly": true }
+  ]
+}

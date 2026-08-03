@@ -1,0 +1,49 @@
+{
+  "roles": [
+    { "key": "staff",        "name": "Staff",         "color": "F1C40F", "hoist": true,  "mentionable": true,  "permissionNames": ["ManageMessages", "ManageThreads"] },
+    { "key": "writer",       "name": "Writer",        "color": "3498DB", "hoist": true,  "mentionable": true,  "permissionNames": [] },
+    { "key": "breakingPing", "name": "Breaking-Ping", "color": "ED4245", "hoist": false, "mentionable": false, "permissionNames": [] }
+  ],
+  "categories": [
+    {
+      "name": "📌 START HERE",
+      "channels": [
+        { "name": "welcome", "mode": "broadcast", "topic": "How this server works — read me first" }
+      ]
+    },
+    {
+      "name": "🚨 NEWS WIRE",
+      "channels": [
+        { "name": "breaking-news",  "mode": "broadcast", "topic": "🚨 Major breaking stories only — pings @Breaking-Ping. Opt out in #welcome" },
+        { "name": "top-stories",    "mode": "broadcast", "topic": "The biggest stories right now, scored and corroborated across outlets" },
+        { "name": "daily-briefing", "mode": "broadcast", "topic": "☕ Top 10 stories of the last 24h, every morning at 8am UK" }
+      ]
+    },
+    {
+      "name": "🗂️ DESKS",
+      "channels": [
+        { "name": "uk-news",        "mode": "broadcast", "topic": "🇬🇧 UK news wire" },
+        { "name": "world-news",     "mode": "broadcast", "topic": "🌍 World news wire" },
+        { "name": "south-asia",     "mode": "broadcast", "topic": "🌏 India · Pakistan · Bangladesh" },
+        { "name": "entertainment",  "mode": "broadcast", "topic": "🎬 Entertainment, celebrity & Bollywood" },
+        { "name": "sport-cricket",  "mode": "broadcast", "topic": "🏏 Sport incl. cricket" },
+        { "name": "viral-trending", "mode": "broadcast", "topic": "📈 What the UK is searching & talking about right now" }
+      ]
+    },
+    {
+      "name": "✍️ WRITERS ROOM",
+      "channels": [
+        { "name": "instagram-ideas", "mode": "broadcast", "topic": "💡 AI-picked stories worth a carousel, with ready-made hooks" },
+        { "name": "writers-chat",    "mode": "open",      "topic": "Talk stories, claim work, coordinate" }
+      ]
+    },
+    {
+      "name": "🔧 OPS",
+      "staffOnly": true,
+      "channels": [
+        { "name": "bot-status", "mode": "broadcast", "topic": "Bot health, feed alerts, run failures" },
+        { "name": "staff-chat", "mode": "open",      "topic": "Staff only" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "newsdesk",
+  "version": "1.0.0",
+  "description": "BritAsia news desk — aggregates, scores and posts the latest news to Discord",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "run": "node --env-file-if-exists=.env src/run.js",
+    "dry": "node --env-file-if-exists=.env src/run.js --dry-run --explain",
+    "setup:server": "node --env-file-if-exists=.env setup/build-server.js",
+    "setup:welcome": "node --env-file-if-exists=.env setup/post-welcome.js"
+  },
+  "dependencies": {
+    "rss-parser": "^3.13.0"
+  }
+}
