@@ -8,41 +8,41 @@
     {
       "name": "📌 START HERE",
       "channels": [
-        { "name": "welcome", "mode": "broadcast", "topic": "How this server works — read me first" }
+        { "name": "welcome", "mode": "broadcast", "topic": "What each channel holds and how stories get scored. Read the pinned post." }
       ]
     },
     {
       "name": "🚨 NEWS WIRE",
       "channels": [
-        { "name": "breaking-news",  "mode": "broadcast", "topic": "🚨 Major breaking stories only — pings @Breaking-Ping. Opt out in #welcome" },
-        { "name": "top-stories",    "mode": "broadcast", "topic": "The biggest stories right now, scored and corroborated across outlets" },
-        { "name": "daily-briefing", "mode": "broadcast", "topic": "☕ Top 10 stories of the last 24h, every morning at 8am UK" }
+        { "name": "breaking-news",  "mode": "broadcast", "topic": "Stories scoring 70+ with two outlets confirming. Pings @Breaking-Ping. Capped at 4 an hour." },
+        { "name": "top-stories",    "mode": "broadcast", "topic": "Stories scoring 48+. Each post lists how many outlets carry it. Capped at 8 an hour." },
+        { "name": "daily-briefing", "mode": "broadcast", "topic": "The 10 highest-scoring stories of the past 24 hours, posted after 08:00 London." }
       ]
     },
     {
       "name": "🗂️ DESKS",
       "channels": [
-        { "name": "uk-news",        "mode": "broadcast", "topic": "🇬🇧 UK news wire" },
-        { "name": "world-news",     "mode": "broadcast", "topic": "🌍 World news wire" },
-        { "name": "south-asia",     "mode": "broadcast", "topic": "🌏 India · Pakistan · Bangladesh" },
-        { "name": "entertainment",  "mode": "broadcast", "topic": "🎬 Entertainment, celebrity & Bollywood" },
-        { "name": "sport-cricket",  "mode": "broadcast", "topic": "🏏 Sport incl. cricket" },
-        { "name": "viral-trending", "mode": "broadcast", "topic": "📈 What the UK is searching & talking about right now" }
+        { "name": "uk-news",        "mode": "broadcast", "topic": "UK stories from BBC, Sky and the Guardian. Anything scoring 22 or above." },
+        { "name": "world-news",     "mode": "broadcast", "topic": "World stories from BBC, Sky, Al Jazeera and the Guardian." },
+        { "name": "south-asia",     "mode": "broadcast", "topic": "India, Pakistan and Bangladesh: NDTV, Times of India, Hindustan Times, Dawn, Geo, The Daily Star." },
+        { "name": "entertainment",  "mode": "broadcast", "topic": "Film, music and Bollywood: BBC, Deadline, Variety, Bollywood Hungama, Pinkvilla." },
+        { "name": "sport-cricket",  "mode": "broadcast", "topic": "Sport from BBC, Sky Sports and ESPNcricinfo. Cricket included, not exclusive." },
+        { "name": "viral-trending", "mode": "broadcast", "topic": "Google Trends GB search terms, plus any story matching one. Digest posts every 3 hours at most." }
       ]
     },
     {
       "name": "✍️ WRITERS ROOM",
       "channels": [
-        { "name": "instagram-ideas", "mode": "broadcast", "topic": "💡 AI-picked stories worth a carousel, with ready-made hooks" },
-        { "name": "writers-chat",    "mode": "open",      "topic": "Talk stories, claim work, coordinate" }
+        { "name": "instagram-ideas", "mode": "broadcast", "topic": "Stories rated 50 or above for carousel potential, each with a written hook. Verify against the source before publishing." },
+        { "name": "writers-chat",    "mode": "open",      "topic": "Say which story you are taking so two people do not write the same one." }
       ]
     },
     {
       "name": "🔧 OPS",
       "staffOnly": true,
       "channels": [
-        { "name": "bot-status", "mode": "broadcast", "topic": "Bot health, feed alerts, run failures" },
-        { "name": "staff-chat", "mode": "open",      "topic": "Staff only" }
+        { "name": "bot-status", "mode": "broadcast", "topic": "Dead feeds, failed runs, and any Discord post the bot could not deliver." },
+        { "name": "staff-chat", "mode": "open",      "topic": "Staff only." }
       ]
     }
   ]

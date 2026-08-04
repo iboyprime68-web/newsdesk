@@ -37,7 +37,8 @@
   ],
   "ai": {
     "enabled": true,
-    "models": ["z-ai/glm-5.2", "deepseek/deepseek-v4-flash", "z-ai/glm-4.7"],
+    "_models_note": "OpenRouter accepts at most 3. Priced per million tokens on 2026-08-04: glm-5.2 $0.760/$2.420, glm-4.7 $0.400/$1.750, deepseek-v4-flash $0.140/$0.280. glm-5.1 is $0.966/$3.036, so it costs more than glm-5.2 and is not in the chain.",
+    "models": ["z-ai/glm-5.2", "z-ai/glm-4.7", "deepseek/deepseek-v4-flash"],
     "maxStoriesPerRun": 8,
     "timeoutMs": 45000,
     "temperature": 0.8,

@@ -10,20 +10,24 @@ if (!welcomeId) {
 }
 
 const embed = {
-  title: '👋 Welcome to the BritAsia news desk',
+  title: 'How this server works',
   color: 0xc8102e,
   description: [
-    'This server is your **always-on news wire** — the latest, most clickworthy stories, pulled from 25+ major outlets every few minutes, scored and deduplicated so you only see what matters.',
+    'A bot reads 26 news feeds from 15 outlets, six times an hour. It groups the same story across outlets, scores it, and posts it here. Nothing is written by a person before it appears.',
     '',
-    '**🚨 <#BREAKING>** — only genuinely major stories land here, and they ping <@&PING_ROLE>. Everyone has pings **on by default**; ask a @Staff member to remove your Breaking-Ping role if you want them off (you can still read everything).',
-    '**⭐ <#TOP>** — the biggest stories right now, each showing how many outlets are covering it.',
-    '**🗂️ Desk channels** — UK, World, South Asia, Entertainment, Sport, Viral. Browse when you need material.',
-    '**💡 <#IDEAS>** — AI-picked stories with ready-made Instagram hooks, scored for how well they\'d perform as carousels.',
-    '**☕ <#BRIEFING>** — top 10 of the last 24h, every morning at 8am UK.',
+    '**Scoring.** A story starts with the weight of its outlet, then gains points for each additional outlet running it, for words like *arrested*, *killed* or *resigns*, and for appearing in Google News UK top stories. It loses points as it ages. The score sets where it lands.',
     '',
-    '💬 Want to discuss a story? **Open a thread** on its post — keeps the wire clean.',
-    '🤖 The bot appears **offline** — that\'s normal, it posts on a schedule rather than sitting in the server.',
-    '📊 Score badges: 🔥 80+ major · ⚡ 60+ strong · 📌 solid.',
+    `**<#BREAKING>** takes stories at 70 or above with at least two outlets confirming, and pings <@&PING_ROLE>. That is 2 posts a run, 4 an hour, no more. You have the ping role by default. Ask a @Staff member to remove it and you keep reading everything, silently.`,
+    `**<#TOP>** takes 48 and above. Every post shows the outlet count, so 4 outlets means four newsrooms independently ran it.`,
+    '**Desk channels** take 22 and above, split by subject. Go here for material rather than waiting to be pinged.',
+    `**<#IDEAS>** holds stories a model rated 50 or above for carousel potential, each with a hook already written.`,
+    `**<#BRIEFING>** posts the 10 highest scorers of the previous 24 hours, after 08:00 London.`,
+    '',
+    '**Before you publish anything from <#IDEAS>, open the source link and check it.** The hook is generated. It can be wrong, and your name goes on the carousel, not the bot\'s.',
+    '',
+    'Reply in a thread on a post rather than in the channel, so the wire stays readable. Say in <#CHAT> which story you are taking.',
+    '',
+    'Badges: 🔥 is 80 or above, ⚡ is 60 to 79, 📌 is below 60. The bot shows as offline because it wakes on a schedule and does not hold a connection.',
   ].join('\n'),
   footer: { text: 'BritAsia news desk' },
 };
@@ -34,6 +38,7 @@ function fill(text) {
     .replaceAll('<#TOP>', `<#${cfg.channels['top-stories']}>`)
     .replaceAll('<#IDEAS>', `<#${cfg.channels['instagram-ideas']}>`)
     .replaceAll('<#BRIEFING>', `<#${cfg.channels['daily-briefing']}>`)
+    .replaceAll('<#CHAT>', `<#${cfg.channels['writers-chat']}>`)
     .replaceAll('<@&PING_ROLE>', `<@&${cfg.roles.breakingPing}>`);
 }
 embed.description = fill(embed.description);
