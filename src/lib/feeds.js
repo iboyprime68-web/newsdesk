@@ -121,7 +121,7 @@ export async function fetchFeed(feed, feedState, now = Date.now()) {
 
   let parsed;
   try {
-    parsed = await parser.parseString(await res.text());
+    parsed = await parser.parseString(res.text);
   } catch {
     feedState.failCount = (feedState.failCount || 0) + 1;
     return { items: [], status: 'parse-error' };

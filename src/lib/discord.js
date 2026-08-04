@@ -26,20 +26,20 @@ export async function api(path, { method = 'GET', body, token } = {}) {
       body: body ? JSON.stringify(body) : undefined,
     });
     if (res.status === 429) {
-      const data = await res.json().catch(() => ({}));
-      await sleep(Math.ceil((data.retry_after || 2) * 1000) + 250);
+      let retryAfter = 2;
+      try { retryAfter = JSON.parse(res.text).retry_after || 2; } catch { /* use default */ }
+      await sleep(Math.ceil(retryAfter * 1000) + 250);
       continue;
     }
     if (res.status >= 500) {
       await sleep(1500);
       continue;
     }
-    if (res.status === 204) return null;
+    if (res.status === 204 || !res.text) return null;
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`discord ${method} ${path} -> ${res.status} ${text.slice(0, 300)}`);
+      throw new Error(`discord ${method} ${path} -> ${res.status} ${res.text.slice(0, 300)}`);
     }
-    return res.json();
+    return JSON.parse(res.text);
   }
   throw new Error(`discord ${method} ${path} -> gave up after retries`);
 }

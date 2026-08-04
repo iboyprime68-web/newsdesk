@@ -74,7 +74,7 @@ export async function aiEvaluate(candidates, cfg, apiKey) {
   }
 
   if (!res.ok) {
-    const raw = await res.text().catch(() => '');
+    const raw = res.text || '';
     let detail = raw.slice(0, 200);
     try {
       const parsed = JSON.parse(raw);
@@ -93,7 +93,7 @@ export async function aiEvaluate(candidates, cfg, apiKey) {
   }
 
   try {
-    const data = await res.json();
+    const data = JSON.parse(res.text);
     const content = data.choices?.[0]?.message?.content || '';
     const parsed = JSON.parse(content);
     const out = {};
