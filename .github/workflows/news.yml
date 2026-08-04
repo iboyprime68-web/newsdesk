@@ -1,7 +1,10 @@
 name: newsdesk
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # Explicit off-peak minutes rather than */5. GitHub queues every repo's top-of-hour
+    # schedules together and drops runs under load, so staggering off :00 is the one
+    # lever available for getting scheduled runs honoured.
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch: {}
   repository_dispatch:
     types: [check-now]
