@@ -4,9 +4,9 @@ const SYSTEM_PROMPT = `You are the content editor for BritAsia News' Instagram n
 
 THE AUDIENCE: British South-Asians living in the UK, mostly 18-40. They are UK news consumers first. They care about big UK national stories (crime, politics, cost of living, immigration, health) exactly as much as any British audience does. Do not mark a story down because it is not about South Asia. On top of that they over-index on: South Asia (India/Pakistan/Bangladesh), stories affecting Muslim and South-Asian communities, Bollywood and desi entertainment, cricket, and anything going viral in the UK.
 
-You will receive a JSON array of news stories. For each, judge how strong it would be as an Instagram carousel and write a hook.
+You will receive a JSON array of news stories. For each, judge how strong it would be as an Instagram carousel, write a hook, and name the desk it belongs to.
 
-Reply ONLY with JSON: {"stories":[{"id":"...","ig":0-100,"hook":"...","why":"..."}]}
+Reply ONLY with JSON: {"stories":[{"id":"...","ig":0-100,"hook":"...","why":"...","cat":"..."}]}
 
 "ig" is 0-100. Ask only: would this audience stop scrolling and send it to someone?
   80-100  major breaking news, or a story with deep emotional/community resonance
@@ -18,6 +18,8 @@ A major UK crime, disaster, political or human-interest story is a 65+ even with
 "hook" is one or two short sentences, 120 characters at most. Open on the hardest concrete fact in the story: a number, an age, a place, a named person, a sum of money. The second sentence, if you write one, adds the turn that makes a reader want the rest.
 
 "why" is max 110 chars on what makes it work or fall flat for this audience. Name the specific element doing the work, not a category of appeal.
+
+"cat" is the desk the story belongs to: one of uk, world, southasia, entertainment, sport. Choose it from what the story is about, not from the outlet that filed it. Cricket and football are sport wherever they ran. Film, music and celebrity stories are entertainment. Use southasia for stories set in or driven by India, Pakistan, Bangladesh, Sri Lanka or Nepal, uk for stories set in Britain, and world for everywhere else.
 
 WRITING RULES. Copy that breaks these is unusable, and a writer will publish it.
 
@@ -47,9 +49,26 @@ function trimToWord(text, max) {
   return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.-]+$/, '')}…`;
 }
 
+// Desks the model is allowed to pick. `viral` is left out on purpose: #viral-trending is
+// fed by Google Trends matches, not by story subject, and nothing routes a cluster there
+// by category today.
+const AI_DESKS = new Set(['uk', 'world', 'southasia', 'entertainment', 'sport']);
+const DESK_ALIASES = {
+  uknews: 'uk', worldnews: 'world', southasia: 'southasia',
+  sportcricket: 'sport', sports: 'sport', cricket: 'sport',
+};
+
+/** Model's desk string → a category the router knows, or null. */
+function normalizeDesk(value) {
+  const key = String(value || '').toLowerCase().replace(/[^a-z]/g, '');
+  const desk = DESK_ALIASES[key] || key;
+  return AI_DESKS.has(desk) ? desk : null;
+}
+
 /**
  * One batched OpenRouter call scoring clusters for IG-worthiness.
- * Returns { results, error }: results is { [cid]: {ig, hook, why} } when it worked,
+ * Returns { results, error }: results is { [cid]: {ig, hook, why, cat?} } when it worked,
+ * with cat present only when the model named a desk the router knows.
  * error is a human-readable reason when it didn't. Callers degrade gracefully either way.
  */
 export async function aiEvaluate(candidates, cfg, apiKey) {
@@ -57,12 +76,13 @@ export async function aiEvaluate(candidates, cfg, apiKey) {
   if (!apiKey) return { results: null, error: 'OPENROUTER_API_KEY not set' };
   if (candidates.length === 0) return { results: null, error: null };
 
+  // The cluster's own category is deliberately not sent. It is the feed's label, it is
+  // the thing being checked, and handing it over as ground truth anchors the model to it.
   const payload = candidates.slice(0, cfg.ai.maxStoriesPerRun).map(({ cid, cluster }) => ({
     id: cid,
     headline: cluster.title,
     snippet: (cluster.links[0]?.snippet || '').slice(0, 220),
     outlets: cluster.brands,
-    category: cluster.cat,
   }));
 
   let res;
@@ -128,11 +148,16 @@ export async function aiEvaluate(candidates, cfg, apiKey) {
       }
       const hook = trimToWord(String(s.hook || ''), 140);
       if (!hook) continue;
-      out[s.id] = {
+      const entry = {
         ig: Math.max(0, Math.min(100, Math.round(ig))),
         hook,
         why: trimToWord(String(s.why || ''), 160),
       };
+      // A desk we don't recognise is dropped, not written through: targetChannels sends
+      // any unknown category to #world-news and says nothing about it.
+      const cat = normalizeDesk(s.cat);
+      if (cat) entry.cat = cat;
+      out[s.id] = entry;
     }
     return Object.keys(out).length
       ? { results: out, error: null }

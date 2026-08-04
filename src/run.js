@@ -7,6 +7,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { envValue } from './lib/http.js';
 import { dueFeeds, fetchAllFeeds, isPublishableLink } from './lib/feeds.js';
 import { clusterItems } from './lib/dedupe.js';
+import { classifyCluster } from './lib/classify.js';
 import { scoreCluster, targetChannels, allocatePosts } from './lib/score.js';
 import { updateTrends } from './lib/trends.js';
 import { aiEvaluate } from './lib/ai.js';
@@ -27,6 +28,12 @@ const cfg = JSON.parse(readFileSync('config/scoring.json', 'utf8'));
 const discordCfg = existsSync('config/discord.json')
   ? JSON.parse(readFileSync('config/discord.json', 'utf8'))
   : null;
+// Keyed by id and by name: links written before sourceId existed only carry the name.
+const feedIndex = {};
+for (const f of feedsCfg.feeds) {
+  feedIndex[f.id] = f;
+  if (f.name) feedIndex[f.name] = f;
+}
 
 const live = !DRY && !!discordCfg && !!envValue('DISCORD_BOT_TOKEN');
 if (!DRY && !live) {
@@ -56,6 +63,27 @@ console.log(`  ${items.length} items fetched, ${newsItems.length} new`);
 const touched = clusterItems(state, newsItems, cfg, now);
 const { digest, terms } = updateTrends(state, trendItems, cfg, now);
 
+// Desk comes from the story, not from whichever feed published it first. Only clusters
+// that have not posted anywhere are re-judged: `posted` is keyed by channel name, so
+// moving a cluster's desk after the fact leaves the old key set and the new one unset,
+// and the same story goes out a second time.
+const catMoves = [];
+const reclassify = new Set(touched);
+// A cluster the flood caps deferred is not touched again unless another outlet files on
+// it, so without this it would keep whatever desk it was handed before the rules ran.
+for (const [cid, c] of Object.entries(state.clusters)) {
+  if (c.pending && now - c.firstSeen < cfg.pendingRetryMaxAgeMinutes * 60000) reclassify.add(cid);
+}
+for (const cid of reclassify) {
+  const c = state.clusters[cid];
+  if (!c || c.ghost || Object.keys(c.posted).length !== 0) continue;
+  const cat = classifyCluster(c, cfg, feedIndex);
+  if (cat !== c.cat) {
+    catMoves.push({ from: c.cat, to: cat, by: 'rules', title: c.title });
+    c.cat = cat;
+  }
+}
+
 for (const cid of touched) {
   const c = state.clusters[cid];
   const detail = scoreCluster(c, cfg, terms, now);
@@ -66,21 +94,10 @@ for (const cid of touched) {
   }
 }
 
-// ── 4. Decide what to post ──────────────────────────────────────────────────
-const candidates = [];
-for (const [cid, c] of Object.entries(state.clusters)) {
-  if (c.ghost || c.tier === 'SKIP' || c.links.length === 0) continue;
-  const isTouched = touched.has(cid);
-  const isPendingRetry = c.pending && now - c.firstSeen < cfg.pendingRetryMaxAgeMinutes * 60000;
-  if (!isTouched && !isPendingRetry) continue;
-  if (targetChannels(c).some((ch) => !c.posted[ch])) candidates.push({ cid, cluster: c });
-}
-
-const { toPost, deferred } = bootstrap ? { toPost: [], deferred: [] } : allocatePosts(candidates, cfg, state.postTimes, now);
-for (const { cluster } of toPost) cluster.pending = false;
-for (const cid of deferred) state.clusters[cid].pending = true;
-
-// ── 5. AI evaluation for newly-TOP clusters ─────────────────────────────────
+// ── 4. AI evaluation for newly-TOP clusters ─────────────────────────────────
+// Sits ahead of allocation because the model also returns a desk, and allocation is what
+// turns a category into a channel name. Moving it here costs nothing: this call already
+// ran before the first Discord write.
 const aiCandidates = [...touched]
   .map((cid) => ({ cid, cluster: state.clusters[cid] }))
   .filter(({ cluster: c }) => !c.ghost && !c.ai && (c.tier === 'TOP' || c.tier === 'BREAKING'))
@@ -93,13 +110,42 @@ if (!bootstrap && aiCandidates.length) {
   aiError = error;
   if (results) {
     for (const { cid, cluster } of aiCandidates) {
-      if (results[cid]) cluster.ai = results[cid];
+      const r = results[cid];
+      if (!r) continue;
+      // The model reads the whole headline, so it gets the last word on the desk for the
+      // stories it sees. Gated on nothing having posted yet, same as the rules pass.
+      if (r.cat && r.cat !== cluster.cat && Object.keys(cluster.posted).length === 0) {
+        catMoves.push({ from: cluster.cat, to: r.cat, by: 'ai', title: cluster.title });
+        cluster.cat = r.cat;
+      }
+      cluster.ai = r;
     }
   }
 }
 const ideas = aiCandidates
   .filter(({ cluster: c }) => c.ai && !c.ideaPosted && c.ai.ig >= cfg.ai.minIgScoreToPost)
   .slice(0, 4);
+
+// Every move is printed so the lexicons in config/scoring.json can be tuned against real
+// output. Console only, on purpose: staff read #bot-status for problems, and a line a
+// minute there would bury the alerts that matter.
+for (const m of catMoves) {
+  console.log(`  desk ${m.from} -> ${m.to} (${m.by}): ${m.title.slice(0, 70)}`);
+}
+
+// ── 5. Decide what to post ──────────────────────────────────────────────────
+const candidates = [];
+for (const [cid, c] of Object.entries(state.clusters)) {
+  if (c.ghost || c.tier === 'SKIP' || c.links.length === 0) continue;
+  const isTouched = touched.has(cid);
+  const isPendingRetry = c.pending && now - c.firstSeen < cfg.pendingRetryMaxAgeMinutes * 60000;
+  if (!isTouched && !isPendingRetry) continue;
+  if (targetChannels(c).some((ch) => !c.posted[ch])) candidates.push({ cid, cluster: c });
+}
+
+const { toPost, deferred } = bootstrap ? { toPost: [], deferred: [] } : allocatePosts(candidates, cfg, state.postTimes, now);
+for (const { cluster } of toPost) cluster.pending = false;
+for (const cid of deferred) state.clusters[cid].pending = true;
 
 // ── 6. Briefing ─────────────────────────────────────────────────────────────
 const briefing = bootstrap ? null : briefingIfDue(state, cfg, now);
@@ -290,7 +336,8 @@ if (!live) {
 pruneState(state, now);
 saveState(state, STATE_DIR);
 console.log(`done: ${runDelivered} delivered, ${runFailures} failed, ${toPost.length} allocated, `
-  + `${ideas.length} ideas, ${deferred.length} deferred, ${Object.keys(state.clusters).length} live clusters`);
+  + `${ideas.length} ideas, ${catMoves.length} recategorised, ${deferred.length} deferred, `
+  + `${Object.keys(state.clusters).length} live clusters`);
 
 // State is written above and the workflow persists it with `if: always()`, so failing the
 // run here is safe. It matters because every Discord write is individually caught: without

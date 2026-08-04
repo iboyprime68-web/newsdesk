@@ -65,7 +65,7 @@ export function clusterItems(state, items, cfg, now = Date.now()) {
       } else if (!c.links.some((l) => l.link === item.link) && c.links.length < 8) {
         c.links.push({
           title: item.title, link: item.link, brand: item.brand,
-          sourceName: item.sourceName, weight: item.weight,
+          sourceId: item.sourceId, sourceName: item.sourceName, weight: item.weight,
           snippet: item.snippet, publishedAt: item.publishedAt,
         });
         if (!c.brands.includes(item.brand)) c.brands.push(item.brand);
@@ -93,7 +93,7 @@ export function clusterItems(state, items, cfg, now = Date.now()) {
         lastUpdate: now,
         links: item.corroborationOnly ? [] : [{
           title: item.title, link: item.link, brand: item.brand,
-          sourceName: item.sourceName, weight: item.weight,
+          sourceId: item.sourceId, sourceName: item.sourceName, weight: item.weight,
           snippet: item.snippet, publishedAt: item.publishedAt,
         }],
         brands: item.corroborationOnly ? [] : [item.brand],
