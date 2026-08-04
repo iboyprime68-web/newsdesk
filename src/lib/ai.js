@@ -1,13 +1,32 @@
 import { fetchWithTimeout } from './http.js';
 
-const SYSTEM_PROMPT = `You are the content editor for BritAsia News' Instagram news page. The audience is British South-Asians in the UK (18-40): UK news, world news, South Asia (India/Pakistan/Bangladesh), Bollywood and entertainment, sport including cricket, and viral moments.
+const SYSTEM_PROMPT = `You are the content editor for BritAsia News' Instagram news page.
 
-You will receive a JSON array of news stories. For each story, judge how strong it would be as an Instagram carousel post for this audience, and write a hook.
+THE AUDIENCE: British South-Asians living in the UK, mostly 18-40. They are UK news consumers first. They care about big UK national stories (crime, politics, cost of living, immigration, health) exactly as much as any British audience does — do NOT mark a story down merely because it is not about South Asia. On top of that they over-index on: South Asia (India/Pakistan/Bangladesh), stories affecting Muslim and South-Asian communities, Bollywood and desi entertainment, cricket, and anything going viral in the UK.
+
+You will receive a JSON array of news stories. For each, judge how strong it would be as an Instagram carousel and write a hook.
 
 Reply ONLY with JSON: {"stories":[{"id":"...","ig":0-100,"hook":"...","why":"..."}]}
-- "ig": Instagram-worthiness 0-100 for THIS audience (emotional pull, shareability, visual potential, relevance). Be discriminating: most stories are 30-60, reserve 80+ for certain bangers.
-- "hook": a scroll-stopping headline, max 80 chars. Punchy, curiosity-driven, accurate — never invent facts not in the story.
-- "why": max 110 chars on why it works (or doesn't) for the audience.`;
+
+"ig" — 0-100. Ask only: would this audience stop scrolling and send it to someone?
+  80-100  major breaking news, or a story with deep emotional/community resonance
+  60-79   strong national story, big entertainment/sport moment, striking viral clip
+  40-59   solid news, real but narrower interest
+  0-39    niche, procedural, or industry-insider filler
+A major UK crime, disaster, political or human-interest story is a 65+ even with no South-Asian angle. Reserve sub-40 for genuinely low-interest items.
+
+"hook" — max 80 chars. Lead with the most arresting true detail, and leave a question the carousel answers. Concrete beats abstract; a specific number, age or quote beats a summary. Never invent, exaggerate or imply anything the story does not state — accuracy outranks punchiness every time, and these go to writers who will publish them.
+
+"why" — max 110 chars, plain English, on what makes it work or fall flat for this audience.`;
+
+/** Cut to a whole word, never mid-word — a hook is copy a human will read and reuse. */
+function trimToWord(text, max) {
+  const s = text.trim();
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.-]+$/, '')}…`;
+}
 
 /**
  * One batched OpenRouter call scoring clusters for IG-worthiness.
@@ -80,10 +99,20 @@ export async function aiEvaluate(candidates, cfg, apiKey) {
     const out = {};
     for (const s of parsed.stories || []) {
       if (!s.id) continue;
+      // A score we can't read must not become 0 — that silently buries a story the model
+      // may have rated highly, which is exactly what happened to a "strong carousel
+      // potential" clip. Drop the entry instead so the miss is visible, not invented.
+      const ig = Number(s.ig);
+      if (!Number.isFinite(ig)) {
+        console.error(`[ai] unusable ig score for ${s.id} (${JSON.stringify(s.ig)}) — skipping this story`);
+        continue;
+      }
+      const hook = trimToWord(String(s.hook || ''), 140);
+      if (!hook) continue;
       out[s.id] = {
-        ig: Math.max(0, Math.min(100, Math.round(Number(s.ig) || 0))),
-        hook: String(s.hook || '').slice(0, 90),
-        why: String(s.why || '').slice(0, 120),
+        ig: Math.max(0, Math.min(100, Math.round(ig))),
+        hook,
+        why: trimToWord(String(s.why || ''), 160),
       };
     }
     return Object.keys(out).length
