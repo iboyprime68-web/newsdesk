@@ -37,7 +37,7 @@
   ],
   "ai": {
     "enabled": true,
-    "models": ["z-ai/glm-5.2", "z-ai/glm-5.1", "z-ai/glm-4.7"],
+    "models": ["z-ai/glm-5.2", "deepseek/deepseek-v4-flash", "z-ai/glm-4.7"],
     "maxStoriesPerRun": 8,
     "timeoutMs": 45000,
     "temperature": 0.8,

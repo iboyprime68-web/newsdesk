@@ -65,7 +65,7 @@ export async function aiEvaluate(candidates, cfg, apiKey) {
       const requested = parsed.error?.metadata?.requested_providers;
       if (requested?.length) {
         detail += ` (your OpenRouter account only allows provider(s): ${requested.join(', ')} — `
-          + 'clear the Allowed Providers restriction at openrouter.ai/settings/preferences)';
+          + 'widen Allowed Providers at openrouter.ai/settings/privacy)';
       }
     } catch { /* keep the raw snippet */ }
     const error = `HTTP ${res.status} — ${detail}`;
