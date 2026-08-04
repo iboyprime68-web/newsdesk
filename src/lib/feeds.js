@@ -27,6 +27,30 @@ export function linkId(link) {
   return createHash('sha256').update(canonicalizeLink(link)).digest('hex').slice(0, 16);
 }
 
+// RFC 2606 / RFC 6761 reserved names plus loopback. Nothing behind these is a real
+// article, so a link pointing at one can only be test or placeholder data.
+const PLACEHOLDER_HOST = /(^|\.)(example\.(com|net|org)|test|invalid|localhost|local)$/i;
+
+/**
+ * Guard for anything about to be shown to writers: reject links that cannot possibly
+ * be a real article. This catches placeholder *hosts* only — a fabricated path on a
+ * genuine host (bbc.co.uk/news/example-story) is indistinguishable here, and probing
+ * the URL is not an option because Dawn and Sky answer 403 to any scripted request,
+ * so a liveness check would suppress real stories. The actual guarantee comes from
+ * the pipeline itself: every link it publishes was ingested from a configured feed.
+ * Never post to a content channel outside that path.
+ */
+export function isPublishableLink(link) {
+  try {
+    const u = new URL(link);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    if (PLACEHOLDER_HOST.test(u.hostname)) return false;
+    return u.hostname.includes('.');
+  } catch {
+    return false;
+  }
+}
+
 /** Which feeds to poll this run: breaking every run, standard every 3rd (striped). */
 export function dueFeeds(feeds, runSeq) {
   return feeds.filter((f, i) => f.tier === 'breaking' || runSeq % 3 === i % 3);

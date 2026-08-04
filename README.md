@@ -50,6 +50,13 @@ Use `npm run dry`, not `npm run run`, once CI is live: a local run keeps its own
 `.state/`, so it doesn't know what CI has already posted. (The duplicate guard checks each
 channel's recent messages, so the blast radius is small — but there's no reason to risk it.)
 
+**Never post test or example content to a content channel.** Writers treat everything in
+the desk channels and #instagram-ideas as real and act on it; a synthetic post with a
+plausible headline is indistinguishable from a genuine one. The pipeline only ever
+publishes links ingested from `config/feeds.json`, so the risk comes from ad-hoc scripts
+that call `postMessage` directly — send those to #bot-status (`setup/rehearsal.js` does)
+or use `npm run dry`, which writes nothing to Discord.
+
 `.env` file:
 
 ```

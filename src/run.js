@@ -5,7 +5,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 
 import { envValue } from './lib/http.js';
-import { dueFeeds, fetchAllFeeds } from './lib/feeds.js';
+import { dueFeeds, fetchAllFeeds, isPublishableLink } from './lib/feeds.js';
 import { clusterItems } from './lib/dedupe.js';
 import { scoreCluster, targetChannels, allocatePosts } from './lib/score.js';
 import { updateTrends } from './lib/trends.js';
@@ -128,6 +128,11 @@ if (!live) {
     const id = chanId(channel);
     if (!id) { console.log(`  missing channel id for #${channel}, skipped`); continue; }
     const primaryLink = [...cluster.links].sort((a, b) => b.weight - a.weight)[0].link;
+    if (!isPublishableLink(primaryLink)) {
+      console.error(`  BLOCKED non-publisher link, not posting: ${primaryLink}`);
+      cluster.posted[channel] = 'blocked';
+      continue;
+    }
     if (guard.get(channel)?.has(primaryLink)) {
       cluster.posted[channel] = 'dedup-guard';
       continue;
@@ -147,6 +152,12 @@ if (!live) {
   for (const { cluster } of ideas) {
     const id = chanId('instagram-ideas');
     if (!id) break;
+    const ideaLink = [...cluster.links].sort((a, b) => b.weight - a.weight)[0].link;
+    if (!isPublishableLink(ideaLink)) {
+      console.error(`  BLOCKED non-publisher link from #instagram-ideas: ${ideaLink}`);
+      cluster.ideaPosted = true;
+      continue;
+    }
     try {
       await postMessage(id, buildIdeaMessage(cluster, cluster.ai, cfg));
       cluster.ideaPosted = true;
