@@ -1,12 +1,17 @@
 name: newsdesk
+
+# Cron is only a relauncher here, not the clock. GitHub's scheduler is unreliable and
+# capped at 5-minute granularity, so a run that merely polls once would inherit both
+# problems. Instead each run holds a rolling window and polls every 60 seconds from
+# inside the job, which gives sub-minute news and keeps @Breaking-Ping posts trickling
+# one at a time rather than arriving in a clump after a long gap.
+#
+# The concurrency group means only one window is ever live; cron fires that land during
+# a window queue behind it and start the next one when it ends, so coverage is
+# continuous without ever running two pipelines at once.
 on:
   schedule:
-    # Every 5 minutes, which is the floor GitHub enforces on cron. Written as explicit
-    # minutes offset from :00 because GitHub queues every repository's top-of-hour
-    # schedules together and sheds load by dropping them.
-    # Frequent runs are what keep pings from arriving in clumps: each run carries fewer
-    # new stories, so #breaking-news posts trickle rather than batch.
-    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
   repository_dispatch:
     types: [check-now]
@@ -18,10 +23,15 @@ concurrency:
   group: newsdesk-pipeline
   cancel-in-progress: false
 
+env:
+  WINDOW_MINUTES: 50
+  TICK_SECONDS: 60
+  PUSH_STATE_EVERY_TICKS: 5
+
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
 
@@ -37,44 +47,62 @@ jobs:
 
       - run: npm ci --omit=dev
 
-      - name: Run pipeline
+      - name: Poll feeds on a rolling window
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           STATE_DIR: .state
-        run: node src/run.js
+        run: |
+          git -C .state config user.name "newsdesk-state"
+          git -C .state config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      # The state branch is a cache, not history: this file changes ~288x/day, so we
-      # amend a single commit and force-push rather than growing the repo forever.
-      # The concurrency group means runs never truly overlap; the retry loop covers
-      # re-runs and transient push failures.
+          persist_state() {
+            [ -f state-out/state.json ] || return 0
+            cp state-out/state.json .state/state.json
+            git -C .state add state.json
+            git -C .state diff --cached --quiet && return 0
+            git -C .state commit --amend -q -m "state $(date -u +%FT%TZ)"
+            for attempt in 1 2 3; do
+              git -C .state push -q --force-with-lease origin HEAD:state && return 0
+              git -C .state fetch -q origin state
+              git -C .state reset -q --hard origin/state
+              cp state-out/state.json .state/state.json
+              git -C .state add state.json
+              git -C .state commit --amend -q -m "state $(date -u +%FT%TZ)"
+              sleep $((RANDOM % 5 + 2))
+            done
+            echo "::warning::state push failed after 3 attempts"
+          }
+
+          END=$(( SECONDS + WINDOW_MINUTES * 60 ))
+          tick=0
+          failures=0
+          while [ $SECONDS -lt $END ]; do
+            tick=$(( tick + 1 ))
+            if ! node src/run.js; then
+              failures=$(( failures + 1 ))
+              echo "::warning::tick $tick reported a failure"
+            fi
+            if [ $(( tick % PUSH_STATE_EVERY_TICKS )) -eq 0 ]; then persist_state; fi
+            # Stop early rather than start a tick that would overrun the window.
+            [ $(( SECONDS + TICK_SECONDS )) -ge $END ] && break
+            sleep $TICK_SECONDS
+          done
+
+          persist_state
+          echo "window finished: $tick ticks, $failures with failures"
+
       - name: Persist state
         if: always()
-        working-directory: .state
         run: |
-          git config user.name "newsdesk-state"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ ! -f ../state-out/state.json ]; then
-            echo "pipeline produced no state — nothing to persist"
-            exit 0
-          fi
-          for i in 1 2 3; do
-            cp ../state-out/state.json state.json
-            git add state.json
-            if git diff --cached --quiet; then
-              echo "state unchanged"
-              exit 0
-            fi
-            git commit --amend -m "state $(date -u +%FT%TZ)"
-            if git push --force-with-lease origin HEAD:state; then
-              exit 0
-            fi
-            echo "push rejected, resyncing (attempt $i)"
-            git fetch origin state
-            git reset --hard origin/state
-            sleep $((RANDOM % 5 + 2))
-          done
-          exit 1
+          git -C .state config user.name "newsdesk-state"
+          git -C .state config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          [ -f state-out/state.json ] || exit 0
+          cp state-out/state.json .state/state.json
+          git -C .state add state.json
+          git -C .state diff --cached --quiet && exit 0
+          git -C .state commit --amend -q -m "state $(date -u +%FT%TZ)"
+          git -C .state push -q --force-with-lease origin HEAD:state || true
 
       - name: Report failure to bot-status
         if: failure()
