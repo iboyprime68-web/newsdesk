@@ -18,8 +18,9 @@
     "minBrands": 2,
     "orMinKeywordHits": 2
   },
+  "_caps_note": "breaking-news is the only channel that mentions a role, so it is the only one that can push a phone notification. perRun 1 means a member can never receive two pings in the same instant, however many stories break at once; the rest wait for the next run.",
   "caps": {
-    "breaking-news": { "perRun": 2, "perHour": 4 },
+    "breaking-news": { "perRun": 1, "perHour": 3 },
     "top-stories": { "perRun": 3, "perHour": 8 },
     "default": { "perRun": 4, "perHour": 12 }
   },

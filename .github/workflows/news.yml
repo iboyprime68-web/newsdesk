@@ -1,10 +1,12 @@
 name: newsdesk
 on:
   schedule:
-    # Explicit off-peak minutes rather than */5. GitHub queues every repo's top-of-hour
-    # schedules together and drops runs under load, so staggering off :00 is the one
-    # lever available for getting scheduled runs honoured.
-    - cron: "3,13,23,33,43,53 * * * *"
+    # Every 5 minutes, which is the floor GitHub enforces on cron. Written as explicit
+    # minutes offset from :00 because GitHub queues every repository's top-of-hour
+    # schedules together and sheds load by dropping them.
+    # Frequent runs are what keep pings from arriving in clumps: each run carries fewer
+    # new stories, so #breaking-news posts trickle rather than batch.
+    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
   workflow_dispatch: {}
   repository_dispatch:
     types: [check-now]
