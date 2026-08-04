@@ -16,3 +16,11 @@ export async function fetchWithTimeout(url, { timeoutMs = 10000, headers = {}, m
 }
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Read a secret from the environment, tolerating the invisible junk that survives a
+ * copy-paste or a shell pipe (a leading BOM makes fetch throw on the auth header).
+ */
+export function envValue(name) {
+  return (process.env[name] || '').replace(/^﻿/, '').trim();
+}

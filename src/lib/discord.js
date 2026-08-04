@@ -1,4 +1,4 @@
-import { fetchWithTimeout, sleep } from './http.js';
+import { fetchWithTimeout, sleep, envValue } from './http.js';
 
 const API = 'https://discord.com/api/v10';
 const POST_GAP_MS = 400;
@@ -7,7 +7,7 @@ let lastWrite = 0;
 
 /** Discord REST call with 429/5xx retry. Never logs the token. */
 export async function api(path, { method = 'GET', body, token } = {}) {
-  const botToken = token || process.env.DISCORD_BOT_TOKEN;
+  const botToken = token || envValue('DISCORD_BOT_TOKEN');
   if (!botToken) throw new Error('DISCORD_BOT_TOKEN missing');
 
   for (let attempt = 0; attempt < 4; attempt++) {

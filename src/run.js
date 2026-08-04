@@ -4,6 +4,7 @@
 //   node src/run.js --dry-run --explain   also prints per-cluster score breakdowns
 import { readFileSync, existsSync } from 'node:fs';
 
+import { envValue } from './lib/http.js';
 import { dueFeeds, fetchAllFeeds } from './lib/feeds.js';
 import { clusterItems } from './lib/dedupe.js';
 import { scoreCluster, targetChannels, allocatePosts } from './lib/score.js';
@@ -27,7 +28,7 @@ const discordCfg = existsSync('config/discord.json')
   ? JSON.parse(readFileSync('config/discord.json', 'utf8'))
   : null;
 
-const live = !DRY && !!discordCfg && !!process.env.DISCORD_BOT_TOKEN;
+const live = !DRY && !!discordCfg && !!envValue('DISCORD_BOT_TOKEN');
 if (!DRY && !live) {
   console.log('note: no config/discord.json or DISCORD_BOT_TOKEN — running as dry-run');
 }
@@ -88,7 +89,7 @@ const aiCandidates = [...touched]
 
 let aiError = null;
 if (!bootstrap && aiCandidates.length) {
-  const { results, error } = await aiEvaluate(aiCandidates, cfg, process.env.OPENROUTER_API_KEY);
+  const { results, error } = await aiEvaluate(aiCandidates, cfg, envValue('OPENROUTER_API_KEY'));
   aiError = error;
   if (results) {
     for (const { cid, cluster } of aiCandidates) {
