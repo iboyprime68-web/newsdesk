@@ -1,6 +1,6 @@
 {
   "roles": [
-    { "key": "staff",        "name": "Staff",         "color": "F1C40F", "hoist": true,  "mentionable": true,  "permissionNames": ["ManageMessages", "ManageThreads"] },
+    { "key": "staff",        "name": "Staff",         "color": "F1C40F", "hoist": true,  "mentionable": true,  "permissionNames": ["MANAGE_MESSAGES", "MANAGE_THREADS"] },
     { "key": "writer",       "name": "Writer",        "color": "3498DB", "hoist": true,  "mentionable": true,  "permissionNames": [] },
     { "key": "breakingPing", "name": "Breaking-Ping", "color": "ED4245", "hoist": false, "mentionable": false, "permissionNames": [] }
   ],

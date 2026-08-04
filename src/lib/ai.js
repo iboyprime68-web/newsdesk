@@ -11,10 +11,13 @@ Reply ONLY with JSON: {"stories":[{"id":"...","ig":0-100,"hook":"...","why":"...
 
 /**
  * One batched OpenRouter call scoring clusters for IG-worthiness.
- * Returns { [cid]: {ig, hook, why} } or null on any failure (caller degrades gracefully).
+ * Returns { results, error }: results is { [cid]: {ig, hook, why} } when it worked,
+ * error is a human-readable reason when it didn't. Callers degrade gracefully either way.
  */
 export async function aiEvaluate(candidates, cfg, apiKey) {
-  if (!cfg.ai.enabled || !apiKey || candidates.length === 0) return null;
+  if (!cfg.ai.enabled) return { results: null, error: null };
+  if (!apiKey) return { results: null, error: 'OPENROUTER_API_KEY not set' };
+  if (candidates.length === 0) return { results: null, error: null };
 
   const payload = candidates.slice(0, cfg.ai.maxStoriesPerRun).map(({ cid, cluster }) => ({
     id: cid,
@@ -46,13 +49,28 @@ export async function aiEvaluate(candidates, cfg, apiKey) {
       }),
     });
   } catch (err) {
-    console.error(`[ai] request failed: ${err.message}`);
-    return null;
+    const error = `request failed: ${err.message}`;
+    console.error(`[ai] ${error}`);
+    return { results: null, error };
   }
 
   if (!res.ok) {
-    console.error(`[ai] http ${res.status}`);
-    return null;
+    const raw = await res.text().catch(() => '');
+    let detail = raw.slice(0, 200);
+    try {
+      const parsed = JSON.parse(raw);
+      detail = parsed.error?.message || detail;
+      // A provider allowlist on the OpenRouter account blocks every model regardless
+      // of the slug we ask for — worth spelling out, it looks like a model typo.
+      const requested = parsed.error?.metadata?.requested_providers;
+      if (requested?.length) {
+        detail += ` (your OpenRouter account only allows provider(s): ${requested.join(', ')} — `
+          + 'clear the Allowed Providers restriction at openrouter.ai/settings/preferences)';
+      }
+    } catch { /* keep the raw snippet */ }
+    const error = `HTTP ${res.status} — ${detail}`;
+    console.error(`[ai] ${error}`);
+    return { results: null, error };
   }
 
   try {
@@ -68,10 +86,13 @@ export async function aiEvaluate(candidates, cfg, apiKey) {
         why: String(s.why || '').slice(0, 120),
       };
     }
-    return Object.keys(out).length ? out : null;
+    return Object.keys(out).length
+      ? { results: out, error: null }
+      : { results: null, error: 'model returned no usable stories' };
   } catch (err) {
-    console.error(`[ai] bad response: ${err.message}`);
-    return null;
+    const error = `bad response: ${err.message}`;
+    console.error(`[ai] ${error}`);
+    return { results: null, error };
   }
 }
 

@@ -36,9 +36,7 @@ for (const spec of blueprint.roles) {
     color: parseInt(spec.color, 16),
     hoist: spec.hoist,
     mentionable: spec.mentionable,
-    permissions: bits(...(spec.permissionNames.map((n) => ({
-      ManageMessages: 'MANAGE_MESSAGES', ManageThreads: 'MANAGE_THREADS',
-    }[n] || n)))),
+    permissions: bits(...spec.permissionNames),
   };
   if (role) {
     await api(`/guilds/${GUILD_ID}/roles/${role.id}`, { method: 'PATCH', body });

@@ -39,22 +39,34 @@ jobs:
           STATE_DIR: .state
         run: node src/run.js
 
+      # The state branch is a cache, not history: this file changes ~288x/day, so we
+      # amend a single commit and force-push rather than growing the repo forever.
+      # The concurrency group means runs never truly overlap; the retry loop covers
+      # re-runs and transient push failures.
       - name: Persist state
         if: always()
         working-directory: .state
         run: |
           git config user.name "newsdesk-state"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state.json
-          git diff --cached --quiet && exit 0
-          git commit -m "state $(date -u +%FT%TZ)"
+          if [ ! -f ../state-out/state.json ]; then
+            echo "pipeline produced no state — nothing to persist"
+            exit 0
+          fi
           for i in 1 2 3; do
-            git push origin HEAD:state && exit 0
-            git fetch origin state
-            git reset --hard origin/state
             cp ../state-out/state.json state.json
             git add state.json
-            git commit -m "state retry $i $(date -u +%FT%TZ)"
+            if git diff --cached --quiet; then
+              echo "state unchanged"
+              exit 0
+            fi
+            git commit --amend -m "state $(date -u +%FT%TZ)"
+            if git push --force-with-lease origin HEAD:state; then
+              exit 0
+            fi
+            echo "push rejected, resyncing (attempt $i)"
+            git fetch origin state
+            git reset --hard origin/state
             sleep $((RANDOM % 5 + 2))
           done
           exit 1

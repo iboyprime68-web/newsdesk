@@ -70,6 +70,7 @@ export async function fetchFeed(feed, feedState, now = Date.now()) {
   };
   if (feedState.etag) headers['if-none-match'] = feedState.etag;
   if (feedState.lastModified) headers['if-modified-since'] = feedState.lastModified;
+  feedState.lastAttempt = now;
 
   let res;
   try {

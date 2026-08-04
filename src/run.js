@@ -86,12 +86,13 @@ const aiCandidates = [...touched]
   .sort((a, b) => b.cluster.score - a.cluster.score)
   .slice(0, cfg.ai.maxStoriesPerRun);
 
-let aiResults = null;
+let aiError = null;
 if (!bootstrap && aiCandidates.length) {
-  aiResults = await aiEvaluate(aiCandidates, cfg, process.env.OPENROUTER_API_KEY);
-  if (aiResults) {
+  const { results, error } = await aiEvaluate(aiCandidates, cfg, process.env.OPENROUTER_API_KEY);
+  aiError = error;
+  if (results) {
     for (const { cid, cluster } of aiCandidates) {
-      if (aiResults[cid]) cluster.ai = aiResults[cid];
+      if (results[cid]) cluster.ai = results[cid];
     }
   }
 }
@@ -181,17 +182,28 @@ if (!live) {
   }
 
   // Feed-health alerts, max one per feed per 24h.
+  // Only alert on feeds we actually tried and that are actually failing — a gap in
+  // runs (CI paused, overnight outage) must never look like a dead feed.
   const alerts = [];
   for (const f of feedsCfg.feeds) {
     const fs = state.feeds[f.id];
     if (!fs) continue;
-    const silent6h = fs.lastSuccess && now - fs.lastSuccess > 6 * 3600000;
-    const neverWorked = !fs.lastSuccess && (fs.failCount || 0) >= 3;
-    if ((silent6h || neverWorked) && now - (fs.lastAlert || 0) > 86400000) {
+    const repeatedFailures = (fs.failCount || 0) >= 3;
+    const staleDespiteTrying = fs.lastSuccess
+      && now - fs.lastSuccess > 6 * 3600000
+      && fs.lastAttempt && now - fs.lastAttempt < 30 * 60000;
+    if ((repeatedFailures || staleDespiteTrying) && now - (fs.lastAlert || 0) > 86400000) {
       fs.lastAlert = now;
-      alerts.push(`⚠️ Feed **${f.id}** ${neverWorked ? 'has never succeeded' : 'silent for 6h+'} (${statuses[f.id] || 'not polled this run'})`);
+      const why = repeatedFailures ? `${fs.failCount} consecutive failures` : 'no fresh items in 6h+';
+      alerts.push(`⚠️ Feed **${f.id}** — ${why} (last status: ${statuses[f.id] || 'not polled this run'})`);
     }
   }
+  // AI failures are silent by design (news still flows) — surface them once a day.
+  if (aiError && now - (state.lastAiAlert || 0) > 86400000) {
+    state.lastAiAlert = now;
+    alerts.push(`🤖 AI layer unavailable — #instagram-ideas paused. ${aiError}`);
+  }
+
   if (alerts.length && chanId('bot-status')) {
     try { await postMessage(chanId('bot-status'), buildStatusMessage(alerts.join('\n'), cfg)); }
     catch (err) { console.error(`  status post failed: ${err.message}`); }
