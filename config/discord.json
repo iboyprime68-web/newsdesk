@@ -1,4 +1,5 @@
 {
+  "componentsEnabled": false,
   "guildId": "1534235876337520671",
   "roles": {
     "staff": "1534237402791415969",
@@ -21,6 +22,5 @@
     "bot-status": "1534237439391043725",
     "staff-chat": "1534237441211498571"
   },
-  "componentsEnabled": false,
-  "welcomeMessageId": "1534237492553711771"
+  "welcomeMessageId": "1534258628448489549"
 }

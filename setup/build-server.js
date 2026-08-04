@@ -2,6 +2,7 @@
 // permissions from setup/blueprint.json, then writes config/discord.json.
 //   Needs .env: DISCORD_BOT_TOKEN, GUILD_ID.  Run: npm run setup:server
 import { readFileSync, writeFileSync } from 'node:fs';
+
 import { api } from '../src/lib/discord.js';
 
 const GUILD_ID = process.env.GUILD_ID;
@@ -112,11 +113,20 @@ await api(`/guilds/${GUILD_ID}`, {
 console.log('  guild defaults set (notifications = mentions only)');
 
 // ── Write config ────────────────────────────────────────────────────────────
+// Merge over whatever is already there. Other setup steps write their own keys into
+// this file (post-welcome stores welcomeMessageId), and clobbering them makes a
+// re-run post a duplicate welcome instead of editing the existing one.
+let priorConfig = {};
+try {
+  priorConfig = JSON.parse(readFileSync('config/discord.json', 'utf8'));
+} catch { /* first run */ }
+
 const cfg = {
+  componentsEnabled: false,
+  ...priorConfig,
   guildId: GUILD_ID,
   roles: roleIds,
   channels: channelIds,
-  componentsEnabled: false,
 };
 writeFileSync('config/discord.json', JSON.stringify(cfg, null, 2));
 console.log('config/discord.json written. Now run: npm run setup:welcome');
