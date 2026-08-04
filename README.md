@@ -46,6 +46,10 @@ npm run dry          # fetch + score, print what would post, no Discord writes
 npm run setup:server # (needs .env with DISCORD_BOT_TOKEN + GUILD_ID) build the server
 ```
 
+Use `npm run dry`, not `npm run run`, once CI is live: a local run keeps its own state in
+`.state/`, so it doesn't know what CI has already posted. (The duplicate guard checks each
+channel's recent messages, so the blast radius is small — but there's no reason to risk it.)
+
 `.env` file:
 
 ```
