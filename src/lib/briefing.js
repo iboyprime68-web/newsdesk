@@ -15,8 +15,10 @@ export function londonNow(now = new Date()) {
 }
 
 /**
- * If it's past the briefing hour in London and today's briefing hasn't gone out,
- * return the briefing payload (caller posts it and we set the flag).
+ * If it's past the briefing hour in London and today's briefing hasn't gone out, return
+ * { payload, date }. The caller stamps state.lastBriefingDate only once Discord has
+ * accepted the post — stamping it here would mark an undelivered briefing as sent and
+ * suppress every retry for the rest of the day.
  */
 export function briefingIfDue(state, cfg, now = Date.now()) {
   const { date, hour } = londonNow(new Date(now));
@@ -29,7 +31,7 @@ export function briefingIfDue(state, cfg, now = Date.now()) {
     .slice(0, cfg.briefing.topN);
 
   if (top.length === 0) {
-    state.lastBriefingDate = date; // nothing to say today; don't retry all day
+    state.lastBriefingDate = date; // nothing to say today, and no post to fail — safe here
     return null;
   }
 
@@ -38,8 +40,7 @@ export function briefingIfDue(state, cfg, now = Date.now()) {
     return `**${i + 1}.** [${c.title.slice(0, 120)}](${primary.link}) — ${scoreBadge(c.score)} · ${c.brands.length} outlet(s)`;
   });
 
-  state.lastBriefingDate = date;
-  return {
+  const payload = {
     embeds: [{
       title: `☕ Daily briefing — ${new Date(now).toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'long', day: 'numeric', month: 'long' })}`,
       description: lines.join('\n').slice(0, 4000),
@@ -49,4 +50,5 @@ export function briefingIfDue(state, cfg, now = Date.now()) {
     }],
     allowed_mentions: { parse: [] },
   };
+  return { payload, date };
 }

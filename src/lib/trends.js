@@ -17,8 +17,9 @@ export function updateTrends(state, trendItems, cfg, now = Date.now()) {
 
   const gapMs = cfg.trends.digestMinGapHours * 3600000;
   let digest = null;
+  // lastTrendDigestAt is stamped by the caller after the post lands — setting it here
+  // would suppress the digest for hours when the post failed.
   if (freshCount >= cfg.trends.digestMinNewTerms && now - (state.lastTrendDigestAt || 0) > gapMs) {
-    state.lastTrendDigestAt = now;
     digest = terms.slice(0, 10);
   }
   return { digest, terms: state.trendTerms };

@@ -106,6 +106,8 @@ const briefing = bootstrap ? null : briefingIfDue(state, cfg, now);
 
 // ── 7. Execute ──────────────────────────────────────────────────────────────
 const chanId = (name) => discordCfg?.channels?.[name];
+let runDelivered = 0;
+let runFailures = 0;
 
 if (!live) {
   for (const { cluster, channel } of toPost) {
@@ -117,6 +119,12 @@ if (!live) {
   if (digest) console.log(`  would post trend digest (${digest.length} terms) -> #viral-trending`);
   if (briefing) console.log('  would post daily briefing -> #daily-briefing');
 } else {
+  // Delivery bookkeeping. Nothing in this branch may mark work "done" before Discord has
+  // actually accepted it — a swallowed failure that still burns a cooldown loses the
+  // message permanently, and a run where every write failed must not report success.
+  let delivered = 0;
+  let deliveryFailures = 0;
+
   // Duplicate-post guard: skip anything whose link already sits in the channel's recent embeds.
   const guard = new Map();
   const channelsInvolved = [...new Set(toPost.map((p) => p.channel))];
@@ -142,8 +150,10 @@ if (!live) {
       cluster.posted[channel] = msg.id;
       cluster.postedBrandCount = cluster.brands.length;
       (state.postTimes[channel] ||= []).push(now);
+      delivered++;
       console.log(`  posted [${cluster.tier} ${cluster.score}] -> #${channel}: ${cluster.title.slice(0, 70)}`);
     } catch (err) {
+      deliveryFailures++;
       console.error(`  post failed #${channel}: ${err.message}`);
       cluster.pending = true;
     }
@@ -162,41 +172,77 @@ if (!live) {
       await postMessage(id, buildIdeaMessage(cluster, cluster.ai, cfg));
       cluster.ideaPosted = true;
       (state.postTimes['instagram-ideas'] ||= []).push(now);
+      delivered++;
     } catch (err) {
+      deliveryFailures++;
       console.error(`  idea post failed: ${err.message}`);
     }
   }
 
   if (digest && chanId('viral-trending')) {
-    try { await postMessage(chanId('viral-trending'), buildTrendDigest(digest, cfg)); }
-    catch (err) { console.error(`  trend digest failed: ${err.message}`); }
+    try {
+      await postMessage(chanId('viral-trending'), buildTrendDigest(digest, cfg));
+      state.lastTrendDigestAt = now; // only now is the digest actually out
+      delivered++;
+    } catch (err) {
+      deliveryFailures++;
+      console.error(`  trend digest failed: ${err.message}`);
+    }
   }
 
   if (briefing && chanId('daily-briefing')) {
-    try { await postMessage(chanId('daily-briefing'), briefing); }
-    catch (err) { console.error(`  briefing failed: ${err.message}`); }
+    try {
+      await postMessage(chanId('daily-briefing'), briefing.payload);
+      // Stamping the date is what stops the briefing retrying for the rest of the day,
+      // so it must never happen for a briefing that was not delivered.
+      state.lastBriefingDate = briefing.date;
+      delivered++;
+      console.log(`  posted daily briefing -> #daily-briefing`);
+    } catch (err) {
+      deliveryFailures++;
+      console.error(`  briefing failed (will retry next run): ${err.message}`);
+    }
   }
 
   // Update coverage counts on already-posted BREAKING/TOP embeds as the story grows.
   for (const [, c] of Object.entries(state.clusters)) {
     if (c.ghost || c.brands.length <= (c.postedBrandCount || 0)) continue;
+    let allEditsOk = true;
     for (const channel of ['breaking-news', 'top-stories']) {
       const msgId = c.posted[channel];
-      if (!msgId || msgId === 'dedup-guard' || !chanId(channel)) continue;
+      if (!msgId || msgId === 'dedup-guard' || msgId === 'blocked' || !chanId(channel)) continue;
       try {
         await editMessage(chanId(channel), msgId, buildStoryMessage(c, channel, cfg, discordCfg));
         console.log(`  updated coverage on #${channel}: ${c.title.slice(0, 60)}`);
       } catch (err) {
+        allEditsOk = false;
+        deliveryFailures++;
         console.error(`  edit failed #${channel}: ${err.message}`);
       }
     }
-    c.postedBrandCount = c.brands.length;
+    // Advancing this is what suppresses the retry, so a failed edit must not advance it
+    // or the embed keeps a stale outlet count forever.
+    if (allEditsOk) c.postedBrandCount = c.brands.length;
+  }
+
+  // Default-on breaking pings for members we haven't seen before. Runs before the alert
+  // block so a broken sweep can be reported in the same message.
+  let memberSweepFailed = false;
+  if (state.runSeq % cfg.memberSweepEveryNRuns === 0) {
+    const assigned = await sweepMembers(state, discordCfg);
+    if (assigned < 0) memberSweepFailed = true;
+    else if (assigned > 0) console.log(`  sweep: assigned @Breaking-Ping to ${assigned} member(s)`);
   }
 
   // Feed-health alerts, max one per feed per 24h.
   // Only alert on feeds we actually tried and that are actually failing — a gap in
   // runs (CI paused, overnight outage) must never look like a dead feed.
+  // The 24h cooldowns below are only burned once the alert has actually been delivered.
+  // Stamping them earlier means a single failed post silences the next 24 hours of
+  // warnings — the exact way an outage stays invisible.
   const alerts = [];
+  const alertedFeeds = [];
+  let aiAlerted = false;
   for (const f of feedsCfg.feeds) {
     const fs = state.feeds[f.id];
     if (!fs) continue;
@@ -205,30 +251,51 @@ if (!live) {
       && now - fs.lastSuccess > 6 * 3600000
       && fs.lastAttempt && now - fs.lastAttempt < 30 * 60000;
     if ((repeatedFailures || staleDespiteTrying) && now - (fs.lastAlert || 0) > 86400000) {
-      fs.lastAlert = now;
+      alertedFeeds.push(fs);
       const why = repeatedFailures ? `${fs.failCount} consecutive failures` : 'no fresh items in 6h+';
       alerts.push(`⚠️ Feed **${f.id}** — ${why} (last status: ${statuses[f.id] || 'not polled this run'})`);
     }
   }
   // AI failures are silent by design (news still flows) — surface them once a day.
   if (aiError && now - (state.lastAiAlert || 0) > 86400000) {
-    state.lastAiAlert = now;
+    aiAlerted = true;
     alerts.push(`🤖 AI layer unavailable — #instagram-ideas paused. ${aiError}`);
+  }
+  if (memberSweepFailed) {
+    alerts.push('👥 Member sweep failed — new members are not getting @Breaking-Ping. '
+      + 'Check the Server Members Intent is still enabled in the Discord Developer Portal.');
   }
 
   if (alerts.length && chanId('bot-status')) {
-    try { await postMessage(chanId('bot-status'), buildStatusMessage(alerts.join('\n'), cfg)); }
-    catch (err) { console.error(`  status post failed: ${err.message}`); }
+    try {
+      await postMessage(chanId('bot-status'), buildStatusMessage(alerts.join('\n'), cfg));
+      if (aiAlerted) state.lastAiAlert = now;
+      for (const fs of alertedFeeds) fs.lastAlert = now;
+      delivered++;
+      console.log(`  posted status alert (${alerts.length} item(s)) -> #bot-status`);
+    } catch (err) {
+      deliveryFailures++;
+      console.error(`  status post failed: ${err.message}`);
+    }
+  } else if (alerts.length) {
+    deliveryFailures++;
+    console.error(`  ${alerts.length} alert(s) had nowhere to go — no bot-status channel configured`);
   }
 
-  // Default-on breaking pings for members we haven't seen before.
-  if (state.runSeq % cfg.memberSweepEveryNRuns === 0) {
-    const assigned = await sweepMembers(state, discordCfg);
-    if (assigned > 0) console.log(`  sweep: assigned @Breaking-Ping to ${assigned} member(s)`);
-  }
+  runDelivered = delivered;
+  runFailures = deliveryFailures;
 }
 
 // ── 8. Save ─────────────────────────────────────────────────────────────────
 pruneState(state, now);
 saveState(state, STATE_DIR);
-console.log(`done: ${toPost.length} posts, ${ideas.length} ideas, ${deferred.length} deferred, ${Object.keys(state.clusters).length} live clusters`);
+console.log(`done: ${runDelivered} delivered, ${runFailures} failed, ${toPost.length} allocated, `
+  + `${ideas.length} ideas, ${deferred.length} deferred, ${Object.keys(state.clusters).length} live clusters`);
+
+// State is written above and the workflow persists it with `if: always()`, so failing the
+// run here is safe. It matters because every Discord write is individually caught: without
+// this, a run where nothing at all reached Discord still reports success and no one is told.
+if (runFailures > 0) {
+  console.error(`${runFailures} Discord delivery failure(s) — failing the run so it is not silently green`);
+  process.exitCode = 1;
+}

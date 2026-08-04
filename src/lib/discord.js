@@ -57,8 +57,11 @@ export async function recentEmbedUrls(channelId) {
     const urls = new Set();
     for (const m of msgs) for (const e of m.embeds || []) if (e.url) urls.add(e.url);
     return urls;
-  } catch {
-    return new Set(); // guard is best-effort; posting proceeds
+  } catch (err) {
+    // Posting still proceeds, but without the guard a repost is possible — so this must
+    // never be silent. It was the one unlogged catch in the codebase.
+    console.error(`  dedup guard unavailable for channel ${channelId}: ${err.message}`);
+    return new Set();
   }
 }
 
