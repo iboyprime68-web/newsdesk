@@ -36,6 +36,64 @@
     "evacuated", "missing", "outbreak", "banned", "record", "wins", "champion", "divorce",
     "engaged", "pregnant", "split", "verdict", "riot", "protest", "assassination"
   ],
+  "_classify_note": "Desk routing for feeds marked \"broad\" in feeds.json, which are homepage and catch-all feeds whose own category label is wrong for part of what they carry. Section feeds like bbc-sport are never reclassified, and a cluster that any section feed joined takes that feed's category. Each list below is evidence that a story belongs to that desk. sport and entertainment are checked first, so a Real Madrid story from Al Jazeera lands in sport rather than world. A geographic desk is only left when the story names another region and names nothing in its own, which keeps Pakistan stories that never say \"Pakistan\" in south-asia. An entry starting with re: is a regular expression matched case-sensitively, which is how the country \"US\" is told apart from the word \"us\"; every other entry matches on word boundaries, case-insensitive.",
+  "classify": {
+    "enabled": true,
+    "sport": [
+      "fifa", "uefa", "afcon", "premier league", "la liga", "serie a", "bundesliga",
+      "real madrid", "barcelona", "arsenal", "chelsea", "liverpool", "manchester united",
+      "man utd", "manchester city", "tottenham", "striker", "midfielder", "goalkeeper",
+      "transfer window", "ufc", "mma", "boxing", "heavyweight", "welterweight", "nba", "nfl",
+      "olympics", "olympic", "wicket", "wickets", "batting", "batsman", "batter", "bowler",
+      "bowling", "innings", "odi", "t20", "test match", "test series", "ipl", "psl",
+      "cricket", "ashes", "world cup", "semi-final", "semifinal", "quarter-final",
+      "quarterfinal", "captaincy", "scorecard", "all-rounder", "allrounder", "grand slam",
+      "wimbledon", "formula 1", "motogp", "badminton", "kabaddi", "hockey", "athletics",
+      "dressing room", "penalty shootout", "test debut", "test cricket", "test coach",
+      "head coach", "batting coach", "bowling coach", "wicketkeeper", "selector",
+      "county championship", "basketball", "football", "rugby", "bcci", "pcb"
+    ],
+    "entertainment": [
+      "box office", "trailer", "teaser", "first look", "casting", "film", "movie", "actor",
+      "actress", "singer", "album", "netflix", "prime video", "disney", "hbo", "bollywood",
+      "hollywood", "tollywood", "kollywood", "oscar", "oscars", "grammy", "emmy", "bafta",
+      "filmfare", "premiere", "sequel", "biopic", "screenplay", "co-star", "web series",
+      "music video", "rapper", "red carpet", "sundance", "streaming series"
+    ],
+    "southasia": [
+      "india", "indian", "pakistan", "pakistani", "bangladesh", "bangladeshi", "sri lanka",
+      "sri lankan", "nepal", "nepali", "bhutan", "maldives", "delhi", "mumbai", "kolkata",
+      "chennai", "bengaluru", "bangalore", "hyderabad", "pune", "ahmedabad", "gurugram",
+      "noida", "lucknow", "karachi", "lahore", "islamabad", "peshawar", "quetta",
+      "rawalpindi", "multan", "dhaka", "chittagong", "colombo", "kathmandu", "punjab",
+      "kerala", "gujarat", "bihar", "assam", "odisha", "rajasthan", "maharashtra",
+      "tamil nadu", "karnataka", "telangana", "bengal", "kashmir", "sindh", "balochistan",
+      "khyber", "waziristan", "modi", "bjp", "rss", "shehbaz", "imran khan", "bilawal",
+      "nawaz", "hasina", "yunus", "trinamool", "bnp", "awami", "lok sabha", "rajya sabha",
+      "rupee", "rupees", "crore", "lakh", "taka", "desi", "monsoon", "nab", "pmd", "ndma",
+      "pak", "h-1b", "h1b", "re:\\bRs\\.?\\s?\\d"
+    ],
+    "uk": [
+      "re:\\bBritish\\b(?!\\s+Columbia)",
+      "uk", "britain", "england", "scotland", "wales", "northern ireland",
+      "london", "manchester", "birmingham", "glasgow", "leeds", "liverpool", "cardiff",
+      "belfast", "edinburgh", "westminster", "downing street", "nhs", "met police",
+      "home office", "starmer", "badenoch", "farage", "reform uk", "labour", "tory",
+      "tories", "conservative", "whitehall", "ofcom", "ofsted", "hmrc", "dwp"
+    ],
+    "world": [
+      "re:\\bUS\\b", "re:\\bEU\\b", "re:\\bUN\\b",
+      "usa", "american", "america", "trump", "washington", "white house", "iran",
+      "iranian", "israel", "israeli", "gaza", "palestinian", "palestinians", "ukraine",
+      "ukrainian", "russia", "russian", "china", "chinese", "japan", "japanese", "korea",
+      "indonesia", "indonesian", "vietnam", "thailand", "philippines", "myanmar", "europe",
+      "european", "brussels", "nato", "united nations", "spain", "france", "french",
+      "germany", "german", "italy", "greece", "turkey", "egypt", "nigeria", "kenya",
+      "ethiopia", "brazil", "mexico", "argentina", "canada", "australia", "jordan", "qatar",
+      "saudi", "yemen", "syria", "lebanon", "iraq", "afghanistan", "guatemala", "peru",
+      "colombia", "venezuela", "channel crossing"
+    ]
+  },
   "ai": {
     "enabled": true,
     "_models_note": "OpenRouter accepts at most 3. Priced per million tokens on 2026-08-04: glm-5.2 $0.760/$2.420, glm-4.7 $0.400/$1.750, deepseek-v4-flash $0.140/$0.280. glm-5.1 is $0.966/$3.036, so it costs more than glm-5.2 and is not in the chain.",

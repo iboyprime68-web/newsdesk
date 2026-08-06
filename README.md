@@ -71,6 +71,19 @@ Everything editorial lives in `config/scoring.json`: tier thresholds, breaking k
 per-channel flood caps, AI model chain and the minimum IG score for #instagram-ideas.
 Edit, commit, done — no code changes needed.
 
+### Desk routing
+
+A feed's `category` decides the desk, which is right for section feeds (BBC Sport only
+carries sport) and wrong for the homepage feeds. Those are marked `"broad": true` in
+`config/feeds.json`, and `src/lib/classify.js` re-judges them from the headline using the
+word lists in `classify` in `config/scoring.json`. Rules, in order: a section feed in the
+cluster settles it; then a sport or entertainment term wins over geography; then a
+geographic desk is only left when the story names another region and names nothing of its
+own, which is what keeps a Pakistan story that never says "Pakistan" in #south-asia. For
+TOP and BREAKING the model also returns a desk and gets the last word. A cluster that has
+already posted is never re-judged, since `posted` is keyed by channel and moving it would
+post the story twice. Every move is printed in the run log as `desk x -> y`.
+
 `ai.models` is OpenRouter's fallback chain and accepts **at most 3** entries. Note that an
 "Allowed Providers" restriction on the OpenRouter *account* overrides per-request routing,
 so every model 404s until it's cleared at openrouter.ai/settings/preferences — the bot
