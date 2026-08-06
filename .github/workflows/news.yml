@@ -6,12 +6,18 @@ name: newsdesk
 # inside the job, which gives sub-minute news and keeps @Breaking-Ping posts trickling
 # one at a time rather than arriving in a clump after a long gap.
 #
-# The concurrency group means only one window is ever live; cron fires that land during
-# a window queue behind it and start the next one when it ends, so coverage is
-# continuous without ever running two pipelines at once.
+# The concurrency group means only one window is ever live.
+#
+# THE CRON MUST NOT FIRE DURING THE WINDOW (fixed Aug 2026). This was "*/5" on the
+# theory that ticks landing mid-window would queue behind it and run back to back.
+# They do not. GitHub keeps at most ONE pending run per concurrency group and CANCELS
+# that pending run the moment a newer tick arrives - and a cancelled run mails the
+# owner "Run failed: newsdesk - All jobs were cancelled" exactly like a real failure.
+# That is what was filling his inbox. Hourly at :07 starts one window that ends around
+# :59, so the next tick always arrives to an idle group and nothing is ever cancelled.
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "7 * * * *"
   workflow_dispatch: {}
   repository_dispatch:
     types: [check-now]
@@ -24,14 +30,14 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  WINDOW_MINUTES: 50
+  WINDOW_MINUTES: 52          # must end before the next hourly tick at :07 - see above
   TICK_SECONDS: 60
   PUSH_STATE_EVERY_TICKS: 5
 
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 58
     steps:
       - uses: actions/checkout@v4
 
